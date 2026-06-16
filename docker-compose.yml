@@ -1,0 +1,86 @@
+# ════════════════════════════════════════════════════════════════════
+# FaberLoom · docker-compose
+# STUB listo para la fase Docker (Hostinger KVM 8). NO se usa en LOCAL.
+# En local se corre: Postgres nativo + uvicorn + next dev (ver README.md).
+# Los puertos y nombres de servicio quedan fijados para que las rutas no
+# cambien al migrar de local a Docker.
+# ════════════════════════════════════════════════════════════════════
+services:
+
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: faberloom-db
+    environment:
+      POSTGRES_USER: faberloom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-faberloom}
+      POSTGRES_DB: faberloom
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Bootstrap inicial: aplica los .sql en orden la primera vez.
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U faberloom -d faberloom"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: faberloom-redis
+    ports:
+      - "6381:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: faberloom-api
+    env_file: .env
+    environment:
+      # En Docker el host de la DB es el servicio `db`, no localhost.
+      DATABASE_URL: postgresql+asyncpg://faberloom_app:${POSTGRES_PASSWORD:-faberloom}@db:5432/faberloom
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8200:8000"
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: faberloom-web
+    environment:
+      NEXT_PUBLIC_API_URL: ""
+    depends_on:
+      - api
+    ports:
+      - "3200:3000"
+
+# Caddy is commented out as the VPS uses a central mwt-nginx proxy
+#  caddy:
+#    image: caddy:2-alpine
+#    depends_on:
+#      - api
+#      - web
+#    ports:
+#      - "80:80"
+#      - "443:443"
+#    volumes:
+#      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+#      - caddy_data:/data
+#      - caddy_config:/config
+
+volumes:
+  pgdata:
+#  caddy_data:
+#  caddy_config:
+
+networks:
+  default:
+    name: mwt_default
+    external: true

@@ -1,0 +1,32 @@
+# ── Python / Backend ──
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.env
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Node / Frontend ──
+node_modules/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+frontend/.env.local
+
+# ── Entorno / secretos ──
+.env.*
+!.env.example
+!frontend/.env.local.example
+
+# ── Editor / SO ──
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ── Logs ──
+*.log

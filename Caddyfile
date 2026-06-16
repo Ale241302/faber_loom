@@ -1,0 +1,18 @@
+# ════════════════════════════════════════════════════════════════════
+# FaberLoom · Caddy (reverse proxy)
+# STUB listo para la fase Docker. NO se usa en LOCAL.
+# Sustituir `faberloom.example` por el dominio real al desplegar.
+# ════════════════════════════════════════════════════════════════════
+faberloom.example {
+    encode gzip zstd
+
+    # API FastAPI bajo /api
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+
+    # Resto -> frontend Next.js
+    handle {
+        reverse_proxy web:3000
+    }
+}
