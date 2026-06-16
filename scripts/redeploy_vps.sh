@@ -13,7 +13,7 @@ docker compose build
 
 # 2) Aplicar migraciones de DB (Alembic) dentro del contenedor de la API.
 #    En producción la verdad del schema vive en alembic/versions/, NO en /sql.
-docker compose run --rm api alembic upgrade head
+docker compose run --rm -e DATABASE_URL="postgresql+asyncpg://faberloom:${POSTGRES_PASSWORD:-faberloom}@db:5432/faberloom" api alembic upgrade head
 
 # 3) Levantar/reemplazar servicios sin downtime perceptible.
 docker compose up -d
