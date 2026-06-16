@@ -21,10 +21,20 @@ import {
   getConversations,
   ApiError,
 } from "@/services/spaceService";
+import { getMe, logout as apiLogout } from "@/services/authService";
 import type {
   WorkspaceOut,
   ConversationOut,
+  UserOut,
 } from "@/services/types";
+
+const LOGIN_PATH = "/es/login";
+
+function redirectToLogin(): void {
+  if (typeof window !== "undefined") {
+    window.location.href = LOGIN_PATH;
+  }
+}
 
 export type ThemeId =
   | "warm"
@@ -73,6 +83,10 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 export interface ShellContextValue {
+  // sesión
+  user: UserOut | null;
+  authStatus: LoadStatus;
+  logout: () => void;
   // tema
   theme: ThemeId;
   setTheme: (t: ThemeId) => void;
@@ -125,6 +139,9 @@ export function ShellProvider({ children }: { children: ReactNode }) {
   const [railRightHidden, setRailRightHidden] = useState<boolean>(true);
   const [activeContext, setActiveContext] =
     useState<ActiveContext>(GLOBAL_CONTEXT);
+
+  const [user, setUser] = useState<UserOut | null>(null);
+  const [authStatus, setAuthStatus] = useState<LoadStatus>("loading");
 
   const [workspaces, setWorkspaces] = useState<WorkspaceOut[]>([]);
   const [conversations, setConversations] = useState<ConversationOut[]>([]);
@@ -187,6 +204,40 @@ export function ShellProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // Verificar sesión al montar: si no hay, ir a login (guard del shell).
+  useEffect(() => {
+    let alive = true;
+    setAuthStatus("loading");
+    void getMe()
+      .then((u) => {
+        if (!alive) return;
+        setUser(u);
+        setAuthStatus("ready");
+      })
+      .catch((err: unknown) => {
+        if (!alive) return;
+        if (err instanceof ApiError && err.status === 401) {
+          redirectToLogin();
+          return;
+        }
+        setAuthStatus("error");
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const logout = useCallback(() => {
+    void apiLogout()
+      .catch(() => {
+        // aun si falla, forzamos el flujo de salida
+      })
+      .finally(() => {
+        setUser(null);
+        redirectToLogin();
+      });
+  }, []);
+
   const reloadData = useCallback(() => {
     setDataError(null);
     setWorkspacesStatus("loading");
@@ -199,7 +250,7 @@ export function ShellProvider({ children }: { children: ReactNode }) {
       })
       .catch((err: unknown) => {
         if (err instanceof ApiError && err.status === 401) {
-          window.location.href = "/login";
+          redirectToLogin();
           return;
         }
         setWorkspacesStatus("error");
@@ -217,7 +268,7 @@ export function ShellProvider({ children }: { children: ReactNode }) {
       })
       .catch((err: unknown) => {
         if (err instanceof ApiError && err.status === 401) {
-          window.location.href = "/login";
+          redirectToLogin();
           return;
         }
         setConversationsStatus("error");
@@ -257,6 +308,9 @@ export function ShellProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ShellContextValue>(
     () => ({
+      user,
+      authStatus,
+      logout,
       theme,
       setTheme,
       mode,
@@ -275,6 +329,9 @@ export function ShellProvider({ children }: { children: ReactNode }) {
       reloadData,
     }),
     [
+      user,
+      authStatus,
+      logout,
       theme,
       setTheme,
       mode,

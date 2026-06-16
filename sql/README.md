@@ -13,6 +13,7 @@ por tenant aplique siempre.
 | `002_schema.sql` | Tablas `tenants, users, workspaces, conversations, messages, kb_documents`, índices (trgm + FTS), trigger `updated_at`. La columna `kb_documents.embedding vector(1536)` se añade **solo si pgvector está instalado**. |
 | `003_rls.sql` | Crea el rol `faberloom_app`, otorga DML y define las policies RLS por `tenant_id`. |
 | `004_seed.sql` | Datos de demo ficticios (1 tenant, 1 owner, 6 workspaces). **0 mensajes**. |
+| `005_auth.sql` | Añade `users.password_hash` + función de login `fl_auth_login` (SECURITY DEFINER, respeta el aislamiento) y fija la contraseña de demo del owner. |
 
 > Si pgvector **no** está instalado, el bootstrap **no se rompe**: 001 emite un
 > WARNING y 002 omite la columna `embedding`. Para habilitar embeddings, instala
@@ -45,13 +46,24 @@ psql -U postgres -h localhost -d faberloom -v ON_ERROR_STOP=1 -f 001_extensions.
 psql -U postgres -h localhost -d faberloom -v ON_ERROR_STOP=1 -f 002_schema.sql
 psql -U postgres -h localhost -d faberloom -v ON_ERROR_STOP=1 -f 003_rls.sql
 psql -U postgres -h localhost -d faberloom -v ON_ERROR_STOP=1 -f 004_seed.sql
+psql -U postgres -h localhost -d faberloom -v ON_ERROR_STOP=1 -f 005_auth.sql
 ```
+
+### Credenciales de DEMO (solo desarrollo local)
+
+```
+email:    alvaro@mwt.local
+password: faberloom
+```
+
+> Cambiá la contraseña en cualquier entorno real. El hash se guarda con bcrypt
+> (pgcrypto); el login se verifica del lado de Postgres vía `fl_auth_login`.
 
 Alternativa en un solo comando (mismo orden):
 
 ```powershell
 psql -U postgres -h localhost -d faberloom -v ON_ERROR_STOP=1 `
-  -f 001_extensions.sql -f 002_schema.sql -f 003_rls.sql -f 004_seed.sql
+  -f 001_extensions.sql -f 002_schema.sql -f 003_rls.sql -f 004_seed.sql -f 005_auth.sql
 ```
 
 ## Cadena de conexión de la app

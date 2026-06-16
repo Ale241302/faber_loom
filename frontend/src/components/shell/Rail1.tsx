@@ -44,7 +44,16 @@ export default function Rail1() {
     workspacesStatus,
     conversationsStatus,
     reloadData,
+    user,
+    logout,
   } = useShell();
+
+  const initials = (user?.name ?? "·")
+    .split(/\s+/)
+    .map((w) => w.charAt(0))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   const [acc, setAcc] = useState<AccordionState>({
     spaceloom: true,
@@ -335,9 +344,9 @@ export default function Rail1() {
       </div>
 
       <div className="userfoot">
-        <div className="avatar">AA</div>
-        <div style={{ fontSize: "12px", lineHeight: 1.2 }}>
-          Alvaro
+        <div className="avatar">{initials}</div>
+        <div style={{ fontSize: "12px", lineHeight: 1.2, minWidth: 0 }}>
+          {user?.name ?? "…"}
           <span
             style={{
               color: "var(--text-muted)",
@@ -345,9 +354,41 @@ export default function Rail1() {
               fontSize: "10px",
             }}
           >
-            OWNER · MWT
+            {user ? `${user.role.toUpperCase()} · MWT` : "Cargando sesión…"}
           </span>
         </div>
+        <button
+          type="button"
+          onClick={logout}
+          title="Cerrar sesión"
+          aria-label="Cerrar sesión"
+          style={{
+            marginLeft: "auto",
+            width: "30px",
+            height: "30px",
+            display: "grid",
+            placeItems: "center",
+            background: "none",
+            border: "1px solid var(--border-default)",
+            borderRadius: "var(--r-sm)",
+            color: "var(--text-muted)",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <svg
+            viewBox="0 0 16 16"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.3"
+          >
+            <path d="M6 14H3.5A1.5 1.5 0 0 1 2 12.5v-9A1.5 1.5 0 0 1 3.5 2H6" />
+            <path d="M10.5 11 14 7.5 10.5 4" />
+            <line x1="14" y1="7.5" x2="6" y2="7.5" />
+          </svg>
+        </button>
       </div>
     </aside>
   );

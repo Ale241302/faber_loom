@@ -62,3 +62,30 @@ export interface SendMessageResult {
   user: MessageOut;
   assistant: MessageOut;
 }
+
+export type UserRole =
+  | "owner"
+  | "admin"
+  | "operator"
+  | "supervisor"
+  | "viewer";
+
+/** GET /api/auth/me · POST /api/auth/login -> UserOut */
+export interface UserOut {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  tenant_id: string;
+}
+
+/** POST /api/auth/login body */
+export interface LoginBody {
+  email: string;
+  password: string;
+}
+
+/** POST /api/auth/logout -> { ok: true } */
+export interface LogoutResult {
+  ok: true;
+}

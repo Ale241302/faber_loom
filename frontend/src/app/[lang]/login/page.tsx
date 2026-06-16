@@ -1,195 +1,224 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { login, ApiError } from "@/services/spaceService";
+/* ════════════════════════════════════════════════════════════════════
+   FaberLoom · Login
+   Pantalla de acceso. Sin shell. Estilada solo con design tokens (R8) —
+   cero hex hardcodeado; funciona en los 7 data-theme.
+   En éxito fija la cookie de sesión (httpOnly) y entra a SpaceLoom.
+   ════════════════════════════════════════════════════════════════════ */
+
+import { useState, type CSSProperties, type FormEvent } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { login } from "@/services/authService";
+import { ApiError } from "@/services/spaceService";
 
 export default function LoginPage() {
   const router = useRouter();
-  const params = useParams();
-  const lang = (params?.lang as string) || "es";
+  const params = useParams<{ lang: string }>();
+  const lang =
+    typeof params.lang === "string" && params.lang.length > 0
+      ? params.lang
+      : "es";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState<boolean>(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function onSubmit(e: FormEvent<HTMLFormElement>): Promise<void> {
     e.preventDefault();
     setError(null);
-    setLoading(true);
-
+    setBusy(true);
     try {
-      await login({ email, password });
-      // Redirigir a la aplicación principal tras login exitoso
-      router.push(`/${lang}/space`);
+      await login({ email: email.trim(), password });
+      router.replace(`/${lang}/space`);
     } catch (err: unknown) {
-      if (err instanceof ApiError) {
-        setError(err.message === "La API respondió 401" ? "Credenciales inválidas" : err.message);
+      if (err instanceof ApiError && err.status === 401) {
+        setError("Credenciales inválidas.");
+      } else if (err instanceof ApiError && err.status === 0) {
+        setError("No se pudo conectar con la API.");
       } else {
-        setError("Error de conexión al servidor");
+        setError("No se pudo iniciar sesión. Intentá de nuevo.");
       }
-    } finally {
-      setLoading(false);
+      setBusy(false);
     }
+  }
+
+  const inputStyle: CSSProperties = {
+    width: "100%",
+    background: "var(--bg-sunken)",
+    border: "1px solid var(--border-default)",
+    borderRadius: "var(--r-sm)",
+    padding: "11px 13px",
+    color: "var(--text-primary)",
+    fontSize: "14px",
+    outline: "none",
+  };
+
+  const labelStyle: CSSProperties = {
+    fontSize: "11px",
+    color: "var(--text-muted)",
+    marginBottom: "6px",
+    display: "block",
+    letterSpacing: ".3px",
   };
 
   return (
-    <div className="login-container">
-      <style jsx global>{`
-        body {
-          background-color: #1A1815 !important;
-          color: #F4F1ED !important;
-          margin: 0;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
-      `}</style>
-      <style jsx>{`
-        .login-container {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 100vh;
-          background-color: #1A1815;
-          padding: 20px;
-        }
-        .login-card {
-          background-color: #23201C;
-          border: 1px solid #48423A;
-          border-radius: 12px;
-          padding: 40px;
-          width: 100%;
-          max-width: 420px;
-          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-          text-align: center;
-        }
-        .logo-area {
-          margin-bottom: 30px;
-        }
-        .logo-mark {
-          display: inline-block;
-          width: 44px;
-          height: 44px;
-          line-height: 44px;
-          background-color: #E8896A;
-          color: #1A1815;
-          border-radius: 8px;
-          font-size: 24px;
-          font-weight: bold;
-          margin-bottom: 15px;
-        }
-        .logo-title {
-          font-family: Georgia, serif;
-          font-size: 24px;
-          color: #F4F1ED;
-          margin: 0 0 5px 0;
-        }
-        .logo-subtitle {
-          font-size: 13px;
-          color: #9A9488;
-          margin: 0;
-        }
-        .form-group {
-          margin-bottom: 20px;
-          text-align: left;
-        }
-        .form-label {
-          display: block;
-          font-size: 12px;
-          color: #9A9488;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-bottom: 8px;
-        }
-        .form-input {
-          width: 100%;
-          background-color: #151310;
-          border: 1px solid #48423A;
-          border-radius: 8px;
-          padding: 12px 14px;
-          color: #F4F1ED;
-          font-size: 14px;
-          outline: none;
-          box-sizing: border-box;
-          transition: border-color 0.2s ease;
-        }
-        .form-input:focus {
-          border-color: #E8896A;
-        }
-        .error-message {
-          background-color: rgba(224, 120, 106, 0.1);
-          border: 1px solid #E0786A;
-          color: #E0786A;
-          border-radius: 8px;
-          padding: 10px;
-          font-size: 13px;
-          margin-bottom: 20px;
-          text-align: left;
-        }
-        .submit-btn {
-          width: 100%;
-          background-color: #E8896A;
-          color: #1A1815;
-          border: none;
-          border-radius: 8px;
-          padding: 14px;
-          font-size: 15px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: background-color 0.2s ease, opacity 0.2s ease;
-        }
-        .submit-btn:hover {
-          background-color: #ef9c81;
-        }
-        .submit-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-      `}</style>
-
-      <div className="login-card">
-        <div className="logo-area">
-          <div className="logo-mark">F</div>
-          <h1 className="logo-title">FaberLoom</h1>
-          <p className="logo-subtitle">Copiloto de Backoffice Comercial B2B</p>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "grid",
+        placeItems: "center",
+        padding: "24px",
+        background:
+          "linear-gradient(var(--elev-top),transparent),var(--bg-canvas)",
+      }}
+    >
+      <form
+        onSubmit={onSubmit}
+        style={{
+          width: "100%",
+          maxWidth: "380px",
+          background:
+            "linear-gradient(var(--elev-top),transparent),var(--bg-surface)",
+          border: "1px solid var(--border-default)",
+          borderRadius: "var(--r-lg)",
+          boxShadow: "var(--shadow)",
+          padding: "28px 26px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "11px",
+            marginBottom: "22px",
+          }}
+        >
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "11px",
+              background:
+                "linear-gradient(150deg,var(--coral),var(--coral-deep))",
+              display: "grid",
+              placeItems: "center",
+              color: "var(--bg-canvas)",
+              fontFamily: "var(--font-title)",
+              fontSize: "22px",
+              fontWeight: 700,
+            }}
+          >
+            F
+          </div>
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--font-title)",
+                fontSize: "19px",
+                color: "var(--text-primary)",
+                lineHeight: 1.1,
+              }}
+            >
+              Faber<span style={{ color: "var(--coral)" }}>*</span>loom
+            </div>
+            <div style={{ fontSize: "10.5px", color: "var(--text-muted)" }}>
+              Copiloto B2B · tenant MWT
+            </div>
+          </div>
         </div>
 
-        {error && <div className="error-message">{error}</div>}
+        <h1
+          style={{
+            fontFamily: "var(--font-title)",
+            fontSize: "18px",
+            fontWeight: 400,
+            color: "var(--text-primary)",
+            marginBottom: "18px",
+          }}
+        >
+          Iniciar sesión
+        </h1>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label" htmlFor="email">Usuario (Email)</label>
-            <input
-              id="email"
-              type="email"
-              className="form-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="ejemplo@muitowork.com"
-              required
-              disabled={loading}
-            />
+        <label style={labelStyle} htmlFor="email">
+          Email
+        </label>
+        <input
+          id="email"
+          type="email"
+          autoComplete="username"
+          required
+          disabled={busy}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{ ...inputStyle, marginBottom: "14px" }}
+          placeholder="alvaro@mwt.local"
+        />
+
+        <label style={labelStyle} htmlFor="password">
+          Contraseña
+        </label>
+        <input
+          id="password"
+          type="password"
+          autoComplete="current-password"
+          required
+          disabled={busy}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={{ ...inputStyle, marginBottom: "8px" }}
+          placeholder="••••••••"
+        />
+
+        {error ? (
+          <div
+            role="alert"
+            style={{
+              fontSize: "12px",
+              color: "var(--vino)",
+              background: "var(--vino-soft)",
+              border: "1px solid var(--vino-deep)",
+              borderRadius: "var(--r-sm)",
+              padding: "8px 11px",
+              margin: "10px 0 4px",
+            }}
+          >
+            {error}
           </div>
+        ) : null}
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              type="password"
-              className="form-input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              disabled={loading}
-            />
-          </div>
+        <button
+          type="submit"
+          disabled={busy || email.length === 0 || password.length === 0}
+          style={{
+            width: "100%",
+            marginTop: "16px",
+            padding: "11px",
+            borderRadius: "var(--r-sm)",
+            border: "none",
+            fontSize: "13.5px",
+            fontWeight: 600,
+            cursor: busy ? "default" : "pointer",
+            background: busy ? "var(--bg-raised)" : "var(--coral)",
+            color: busy ? "var(--text-faint)" : "var(--bg-canvas)",
+          }}
+        >
+          {busy ? "Entrando…" : "Entrar"}
+        </button>
 
-          <button type="submit" className="submit-btn" disabled={loading}>
-            {loading ? "Ingresando..." : "Ingresar a la Plataforma"}
-          </button>
-        </form>
-      </div>
+        <div
+          style={{
+            marginTop: "16px",
+            fontSize: "11px",
+            color: "var(--text-faint)",
+            textAlign: "center",
+            lineHeight: 1.5,
+          }}
+        >
+          Acceso provisionado por tu administrador · sesión segura httpOnly
+        </div>
+      </form>
     </div>
   );
 }

@@ -26,7 +26,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(
+export async function request<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
@@ -97,15 +97,4 @@ export function sendMessage(
   );
 }
 
-export function login(body: any): Promise<any> {
-  return request<any>("/auth/login", {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-}
-
-export function logout(): Promise<any> {
-  return request<any>("/auth/logout", {
-    method: "POST",
-  });
-}
+// Auth (login/logout/me) vive en `@/services/authService`.

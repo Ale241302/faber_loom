@@ -41,8 +41,11 @@ cd C:\Users\ale13\OneDrive\Documents\faber_loom\sql
 psql -U postgres -h localhost -c "CREATE ROLE faberloom LOGIN PASSWORD 'faberloom';"
 psql -U postgres -h localhost -c "CREATE DATABASE faberloom OWNER faberloom;"
 psql -U postgres -h localhost -d faberloom -v ON_ERROR_STOP=1 `
-  -f 001_extensions.sql -f 002_schema.sql -f 003_rls.sql -f 004_seed.sql
+  -f 001_extensions.sql -f 002_schema.sql -f 003_rls.sql -f 004_seed.sql -f 005_auth.sql
 ```
+
+> **Si ya creaste la DB antes** (sin `005_auth.sql`), basta con aplicar ese:
+> `psql -U postgres -h localhost -d faberloom -v ON_ERROR_STOP=1 -f 005_auth.sql`
 
 Esto crea el rol de app `faberloom_app` (NOSUPERUSER, NOBYPASSRLS), las tablas con
 `tenant_id NOT NULL` + RLS `ENABLE + FORCE`, y el seed de demo (tenant `mwt`, owner
@@ -76,9 +79,25 @@ copy .env.local.example .env.local
 npm run dev
 ```
 
-Abrir <http://localhost:3000> → redirige a `/es/space` (SpaceLoom). El shell trae
-los **7 temas** del mock (Faber Warm por defecto), rail de navegación, y el composer
-con HITL. El rail "My Workspaces" / "Historial" se puebla desde la API.
+Abrir <http://localhost:3000>. Sin sesión, te redirige a `/es/login`.
+
+**Credenciales de demo** (solo local): `alvaro@mwt.local` / `faberloom`.
+
+Tras entrar vas a `/es/space` (SpaceLoom). El shell trae los **7 temas** del mock
+(Faber Warm por defecto), rail de navegación, y el composer con HITL. El rail
+"My Workspaces" / "Historial" se puebla desde la API. El botón de **cerrar sesión**
+está en el pie del rail izquierdo (junto a tu usuario).
+
+### Autenticación (cómo funciona)
+
+- Login (`POST /api/auth/login`) verifica email+password contra Postgres (bcrypt
+  vía pgcrypto) y devuelve una cookie **httpOnly firmada (JWT)**; el `tenant_id`
+  viaja firmado dentro del token, nunca en un header de cliente (R2).
+- Cada request al API exige sesión válida; sin ella, las rutas de SpaceLoom
+  responden `401` y el frontend te manda al login.
+- Logout (`POST /api/auth/logout`) borra la cookie.
+- Para entornos reales: cambiá `JWT_SECRET` en `.env` y poné `COOKIE_SECURE=true`
+  (requiere https).
 
 ---
 
