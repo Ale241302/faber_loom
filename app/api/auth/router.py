@@ -128,7 +128,7 @@ async def recovery_request(
     try:
         result = await session.execute(
             text(
-                "SELECT token_id, tenant_id, user_id, user_name, user_email "
+                "SELECT o_token_id, o_tenant_id, o_user_id, o_user_name, o_user_email "
                 "FROM fl_auth_create_reset_token(:email, :token_hash, :expires_at)"
             ),
             {
@@ -174,7 +174,7 @@ async def recovery_reset(
     try:
         result = await session.execute(
             text(
-                "SELECT id, tenant_id, email, name, role "
+                "SELECT o_id, o_tenant_id, o_email, o_name, o_role "
                 "FROM fl_auth_confirm_reset_token(:token_hash, :password)"
             ),
             {"token_hash": token_hash, "password": body.password},

@@ -33,11 +33,11 @@ CREATE OR REPLACE FUNCTION fl_auth_create_reset_token(
     p_expires_at timestamptz
 )
 RETURNS TABLE (
-    token_id     uuid,
-    tenant_id    uuid,
-    user_id      uuid,
-    user_name    text,
-    user_email   text
+    o_token_id     uuid,
+    o_tenant_id    uuid,
+    o_user_id      uuid,
+    o_user_name    text,
+    o_user_email   text
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -79,11 +79,11 @@ CREATE OR REPLACE FUNCTION fl_auth_confirm_reset_token(
     p_new_password text
 )
 RETURNS TABLE (
-    id        uuid,
-    tenant_id uuid,
-    email     text,
-    name      text,
-    role      text
+    o_id        uuid,
+    o_tenant_id uuid,
+    o_email     text,
+    o_name      text,
+    o_role      text
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
