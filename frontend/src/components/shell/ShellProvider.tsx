@@ -198,6 +198,10 @@ export function ShellProvider({ children }: { children: ReactNode }) {
         setWorkspacesStatus("ready");
       })
       .catch((err: unknown) => {
+        if (err instanceof ApiError && err.status === 401) {
+          window.location.href = "/login";
+          return;
+        }
         setWorkspacesStatus("error");
         const msg =
           err instanceof ApiError
@@ -212,6 +216,10 @@ export function ShellProvider({ children }: { children: ReactNode }) {
         setConversationsStatus("ready");
       })
       .catch((err: unknown) => {
+        if (err instanceof ApiError && err.status === 401) {
+          window.location.href = "/login";
+          return;
+        }
         setConversationsStatus("error");
         const msg =
           err instanceof ApiError

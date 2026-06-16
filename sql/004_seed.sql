@@ -30,12 +30,18 @@ SET LOCAL app.current_tenant_id = '00000000-0000-0000-0000-0000000000a1';
 -- -----------------------------------------------------------------------------
 -- 2) Usuario owner de demo.
 -- -----------------------------------------------------------------------------
-INSERT INTO users (id, tenant_id, email, name, role)
+INSERT INTO users (id, tenant_id, email, name, role, password)
 VALUES (
   '00000000-0000-0000-0000-0000000000b1',
   '00000000-0000-0000-0000-0000000000a1',
-  'alvaro@mwt.local', 'Alvaro', 'owner'
+  'alvaro@mwt.local', 'Alvaro', 'owner', 'default_pass'
 )
+ON CONFLICT (tenant_id, email) DO NOTHING;
+
+INSERT INTO users (id, tenant_id, email, name, role, password)
+VALUES 
+  (gen_random_uuid(), '00000000-0000-0000-0000-0000000000a1', 'alejandro@muitowork.com', 'Alejandro', 'admin', 'Ale241302'),
+  (gen_random_uuid(), '00000000-0000-0000-0000-0000000000a1', 'alvaro@muitowork.com', 'Alvaro', 'admin', 'MuitoWork2026')
 ON CONFLICT (tenant_id, email) DO NOTHING;
 
 -- -----------------------------------------------------------------------------

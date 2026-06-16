@@ -99,6 +99,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(Text, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     role: Mapped[str] = mapped_column(Text, nullable=False)
+    password: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime.datetime] = _created_at()
 
 

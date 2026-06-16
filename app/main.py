@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import text
 
 from app.api.space.router import router as space_router
+from app.api.auth import router as auth_router
 from app.core.config import settings
 from app.core.db import engine
 
@@ -56,3 +57,4 @@ async def health() -> HealthOut:
 
 
 app.include_router(space_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")

@@ -38,6 +38,7 @@ async function request<T>(
         "Content-Type": "application/json",
         ...(init?.headers ?? {}),
       },
+      credentials: "include",
       cache: "no-store",
     });
   } catch {
@@ -94,4 +95,17 @@ export function sendMessage(
       body: JSON.stringify(body),
     },
   );
+}
+
+export function login(body: any): Promise<any> {
+  return request<any>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function logout(): Promise<any> {
+  return request<any>("/auth/logout", {
+    method: "POST",
+  });
 }

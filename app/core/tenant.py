@@ -14,7 +14,7 @@ import uuid
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Cookie
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +25,7 @@ from app.core.db import get_session
 
 @dataclass(frozen=True, slots=True)
 class TenantContext:
-    """Contexto resuelto del request: tenant y usuario dev."""
+    """Contexto resuelto del request: tenant y usuario logueado."""
 
     tenant_id: uuid.UUID
     user_id: uuid.UUID
@@ -34,47 +34,58 @@ class TenantContext:
 
 async def get_tenant_ctx(
     session: AsyncSession = Depends(get_session),
+    session_email: str | None = Cookie(default=None),
+    session_tenant_id: str | None = Cookie(default=None),
 ) -> AsyncGenerator[TenantContext, None]:
     """Dependencia: fija el tenant en la sesión y entrega el `TenantContext`.
 
     Pasos:
       1. Inicia una transacción (begin) para que `SET LOCAL` tenga alcance.
-      2. Resuelve el usuario dev por `DEV_USER_EMAIL` (consulta a `users`).
-      3. Ejecuta `SET LOCAL app.current_tenant_id`.
-      4. Entrega el contexto; el commit/rollback lo gestiona el `begin()`.
+      2. Valida la sesión a partir de las cookies `session_email` y `session_tenant_id`.
+      3. Resuelve el usuario por email.
+      4. Ejecuta `SET LOCAL app.current_tenant_id`.
+      5. Entrega el contexto; el commit/rollback lo gestiona el `begin()`.
 
     Errores:
+      * 401 si no está autenticado o la sesión es inválida.
       * 503 si la base de datos no está disponible.
-      * 503 si el usuario dev / tenant no existen (DB sin seed).
     """
+    email_to_use = session_email
+    tenant_id_to_use = session_tenant_id
+
+    # Fallback para local development sólo si las cookies no están y settings
+    # tiene configurados DEV_USER_EMAIL y DEV_TENANT_ID (para no romper tests locales).
+    if not email_to_use or not tenant_id_to_use:
+        email_to_use = settings.DEV_USER_EMAIL
+        tenant_id_to_use = settings.DEV_TENANT_ID
+
+    if not email_to_use or not tenant_id_to_use:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No autenticado.",
+        )
+
     try:
         async with session.begin():
-            # Paso 1: fijar el tenant dev ANTES de cualquier query con RLS.
-            # `users` está protegida por RLS (ENABLE + FORCE); sin fijar el
-            # tenant primero, el SELECT de abajo devolvería 0 filas y nunca
-            # podríamos resolver el contexto (bootstrap chicken-and-egg).
-            # El tenant_id dev se toma de settings (NUNCA de un header — R2).
+            # Paso 1: fijar el tenant de la sesión ANTES de cualquier query con RLS.
             await session.execute(
                 text("SELECT set_config('app.current_tenant_id', :tid, true)"),
-                {"tid": settings.DEV_TENANT_ID},
+                {"tid": tenant_id_to_use},
             )
 
-            # Paso 2: resolver el usuario dev (ya visible bajo RLS del tenant).
+            # Paso 2: resolver el usuario logueado
             result = await session.execute(
                 text(
                     "SELECT id, tenant_id, email FROM users "
                     "WHERE email = :email LIMIT 1"
                 ),
-                {"email": settings.DEV_USER_EMAIL},
+                {"email": email_to_use},
             )
             row = result.first()
             if row is None:
                 raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail=(
-                        "Usuario dev no encontrado; la base de datos no está "
-                        "sembrada (ver sql/004_seed.sql)."
-                    ),
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Usuario no encontrado o sesión inválida.",
                 )
 
             user_id: uuid.UUID = row[0]
@@ -98,8 +109,6 @@ async def get_tenant_ctx(
     except HTTPException:
         raise
     except (SQLAlchemyError, OSError) as exc:
-        # DB caída: SQLAlchemyError (driver) u OSError/ConnectionRefusedError
-        # que asyncpg puede propagar sin envolver al fallar el connect.
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Base de datos no disponible.",

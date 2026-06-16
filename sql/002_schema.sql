@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS users (
   name        text        NOT NULL,
   role        text        NOT NULL DEFAULT 'viewer'
                           CHECK (role IN ('owner','admin','operator','supervisor','viewer')),
+  password    text        NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now(),
   -- email único dentro del tenant (no global).
