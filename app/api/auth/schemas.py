@@ -37,3 +37,21 @@ class LogoutOut(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
 
     ok: Literal[True] = True
+
+
+class RecoveryRequestIn(BaseModel):
+    """Body de POST /api/auth/recovery/request."""
+
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    email: str = Field(min_length=3, max_length=320)
+    lang: str = Field(default="es", min_length=2, max_length=10)
+
+
+class RecoveryResetIn(BaseModel):
+    """Body de POST /api/auth/recovery/reset."""
+
+    model_config = ConfigDict(strict=True, extra="forbid")
+
+    token: str = Field(min_length=10, max_length=256)
+    password: str = Field(min_length=8, max_length=200)

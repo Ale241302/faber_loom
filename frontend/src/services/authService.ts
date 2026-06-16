@@ -24,3 +24,11 @@ export function logout(): Promise<LogoutResult> {
 export function getMe(): Promise<UserOut> {
   return request<UserOut>("/auth/me");
 }
+
+/** POST /api/auth/recovery/request → solicita email de recuperación. */
+export function requestRecovery(email: string, lang: string): Promise<{ ok: boolean }> {
+  return request<{ ok: boolean }>("/auth/recovery/request", {
+    method: "POST",
+    body: JSON.stringify({ email, lang }),
+  });
+}

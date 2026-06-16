@@ -120,3 +120,18 @@ está en el pie del rail izquierdo (junto a tu usuario).
   servicio y puertos para que las rutas no cambien al migrar. Faltan los `Dockerfile`
   de `api` y `web`, que se definen al entrar a la fase Docker.
 - Las rutas internas (`app/...`, `frontend/src/...`) ya siguen el canon del proyecto.
+
+### Despliegue al VPS (cuando se suba)
+
+La ruta del repo en el VPS es **`/opt/faber_loom`** (con guion bajo).
+
+```bash
+# 1) Subir a GitHub (local)
+git add <rutas de los archivos>
+git commit -m "[FaberLoom] <descripción>"
+git push origin main
+
+# 2) Bajar y redeployar en el VPS (Docker)
+ssh -o StrictHostKeyChecking=no -p 2222 root@187.77.218.102 "cd /opt/faber_loom && git pull origin main"
+ssh -o StrictHostKeyChecking=no -p 2222 root@187.77.218.102 "cd /opt/faber_loom && bash scripts/redeploy_vps.sh"
+```

@@ -48,6 +48,19 @@ class Settings(BaseSettings):
     # 'lax' funciona para localhost:3000 -> localhost:8000 (mismo site).
     COOKIE_SAMESITE: Literal["lax", "strict", "none"] = "lax"
 
+    # ── SMTP / Correo electrónico ──
+    EMAIL_HOST: str = "mail.mwt.one"
+    EMAIL_PORT: int = 465
+    EMAIL_USE_SSL: bool = True
+    EMAIL_USE_TLS: bool = False
+    EMAIL_HOST_USER: str = ""
+    EMAIL_HOST_PASSWORD: str = ""
+    DEFAULT_FROM_EMAIL: str = "info@mwt.one"
+    DEFAULT_REPLY_TO: str = "trade@mwt.one"
+
+    # ── Frontend URL (para enlaces) ──
+    FRONTEND_URL: str = "https://faberloom.ai"
+
     @property
     def cors_origins_list(self) -> list[str]:
         """Lista de orígenes CORS a partir de la cadena coma-separada."""

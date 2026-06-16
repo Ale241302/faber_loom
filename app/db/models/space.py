@@ -99,7 +99,7 @@ class User(Base):
     email: Mapped[str] = mapped_column(Text, nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     role: Mapped[str] = mapped_column(Text, nullable=False)
-    password: Mapped[str] = mapped_column(Text, nullable=False)
+    password_hash: Mapped[str | None] = mapped_column("password_hash", Text, nullable=True)
     created_at: Mapped[datetime.datetime] = _created_at()
 
 
@@ -230,4 +230,24 @@ class KbDocument(Base):
     source: Mapped[str] = mapped_column(Text, nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
     # embedding vector(1536) -> existe en DB; no se carga en el ORM (R1/R7).
+    created_at: Mapped[datetime.datetime] = _created_at()
+
+
+class PasswordResetToken(Base):
+    """Token de recuperación de contraseña en la base de datos."""
+
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(_UUID_PK, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        _UUID_PK, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    expires_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False
+    )
+    consumed_at: Mapped[datetime.datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime.datetime] = _created_at()
